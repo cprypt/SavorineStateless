@@ -1,0 +1,6 @@
+@SavorineStateless_HostAddress = http://localhost:5239
+
+GET {{SavorineStateless_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###
