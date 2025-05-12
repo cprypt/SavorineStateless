@@ -1,0 +1,6 @@
+@Savorine.AsyncServer_HostAddress = http://localhost:5274
+
+GET {{Savorine.AsyncServer_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###
