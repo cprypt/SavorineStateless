@@ -1,4 +1,3 @@
-// File: Program.cs
 using System.Text;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
@@ -10,17 +9,17 @@ using Savorine.AsyncServer.Data;
 using Savorine.AsyncServer.Interfaces;
 using Savorine.AsyncServer.Repositories;
 using Savorine.AsyncServer.Services;
-using Savorine.AsyncServer.Hubs;
+using Savorine.AsyncServer.WebSockets;
 
 var builder = WebApplication.CreateBuilder(args);
 
 builder.Services.AddControllers();
 
-// Add services to the container
+// DB
 builder.Services.AddDbContext<GameDbContext>(opts =>
     opts.UseSqlite(builder.Configuration.GetConnectionString("DefaultConnection")));
 
-// JWT Authentication
+// JWT Auth
 var jwtSection = builder.Configuration.GetSection("Jwt");
 var key = Encoding.UTF8.GetBytes(jwtSection["Key"]!);
 
@@ -43,6 +42,7 @@ builder.Services.AddAuthentication(opt =>
     };
 });
 
+// CORS
 builder.Services.AddCors(o => o.AddPolicy("CorsPolicy", policy =>
 {
     policy
@@ -52,7 +52,7 @@ builder.Services.AddCors(o => o.AddPolicy("CorsPolicy", policy =>
       .SetIsOriginAllowed(_ => true);
 }));
 
-// DI: Repositories & Services
+// DI
 builder.Services.AddScoped<IUserRepository, UserRepository>();
 builder.Services.AddScoped<IGameDataRepository, GameDataRepository>();
 builder.Services.AddScoped<IUserService, UserService>();
@@ -61,13 +61,12 @@ builder.Services.AddScoped<IGameDataService, GameDataService>();
 builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
-builder.Services.AddSignalR();
 
 var app = builder.Build();
 
 app.UseCors("CorsPolicy");
 
-// Configure the HTTP request pipeline
+// Swagger
 if (app.Environment.IsDevelopment())
 {
     app.UseSwagger();
@@ -75,19 +74,32 @@ if (app.Environment.IsDevelopment())
 }
 
 app.UseHttpsRedirection();
-
 app.UseAuthentication();
 app.UseAuthorization();
-
 app.MapControllers();
 
-// Ensure database is created
+// ✅ WebSocket 활성화
+app.UseWebSockets();
+
+// ✅ WebSocket 요청 처리 ("/ws" 경로에 대해)
+app.Use(async (context, next) =>
+{
+    if (context.Request.Path == "/ws" && context.WebSockets.IsWebSocketRequest)
+    {
+        var socket = await context.WebSockets.AcceptWebSocketAsync();
+        await WebSocketHandler.HandleSocketAsync(socket);
+    }
+    else
+    {
+        await next();
+    }
+});
+
+// DB 마이그레이션
 using (var scope = app.Services.CreateScope())
 {
     var db = scope.ServiceProvider.GetRequiredService<GameDbContext>();
     db.Database.Migrate();
 }
-
-app.MapHub<GameHub>("/hubs/game");
 
 app.Run();

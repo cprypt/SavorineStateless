@@ -272,3 +272,6 @@ __pycache__/
 # tools/
 
 # End of https://www.toptal.com/developers/gitignore/api/aspnetcore
+
+# Savorine Custom Ignore
+Assets/1_RapidFramework/05_Fonts/TMP/neodgm SDF.asset

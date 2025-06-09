@@ -19,10 +19,16 @@ namespace Savorine.AsyncServer.Hubs
                          .SendAsync("PlayerLeft", Context.ConnectionId);
         }
 
-        public async Task BroadcastPlayerState(string roomName, object state)
+        public async Task BroadcastPlayerState(string roomName, string stateJson)
         {
             await Clients.OthersInGroup(roomName)
-                         .SendAsync("ReceivePlayerState", Context.ConnectionId, state);
+                         .SendAsync("ReceivePlayerState", Context.ConnectionId, stateJson);
+        }
+
+        public async Task DistributeItems(string roomName, string itemJson)
+        {
+            await Clients.Group(roomName)
+                         .SendAsync("DistributeItems", itemJson);
         }
     }
 }
